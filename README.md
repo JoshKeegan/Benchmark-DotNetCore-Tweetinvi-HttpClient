@@ -33,3 +33,9 @@ You can also change the `BlockAttempts` variable which is the attempts count for
 Now you can launch the project (this is a simple .NET Core console app) and wait for the benchmark to finish.
 
 All console outputs are logged in `result.txt` file which will be saved in the same directory of the project executable.
+
+# Comments
+
+I know the code can be better but this is just a benchmarking tool quickly written to try to debug and reproduce an issue I get randomly on my Debian 8 server.
+
+See more here: https://github.com/linvi/tweetinvi/issues/700.
