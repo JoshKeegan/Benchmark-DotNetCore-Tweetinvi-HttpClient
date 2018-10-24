@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
+using KLog;
 using TestTwitterAPI.API;
 using Tweetinvi;
 
@@ -16,26 +17,38 @@ namespace TestTwitterAPI
         static List<ulong> Times;
         static int FailedBlock;
 
+        public static Log DetailedLog;
+        public static Log SummaryLog;
+
 
         static void Main(string[] args)
         {
-            Log(".NET Core Tweetinvi and HTTPClient benchmarking");
-            Log("===============================================");
+            // Initialise logging
+            FileLog fileDetailedLog = new FileLog("logs/detailed.log", LogLevel.All);
+            FileLog fileSummaryLog = new FileLog("logs/summary.log", LogLevel.All);
+            ColouredConsoleLog consoleLog = new ColouredConsoleLog(LogLevel.All);
+            
+            DetailedLog = new CompoundLog(fileDetailedLog, consoleLog);
+            SummaryLog = new CompoundLog(fileSummaryLog, consoleLog);
+            
+            DetailedLog.Info(".NET Core Tweetinvi and HTTPClient benchmarking");
+            DetailedLog.Info("===============================================");
 
-            Log("> Tweetinvi testing");
+            DetailedLog.Info("> Tweetinvi testing");
             TweetinviTest();
 
-            Log("");
-            Log("- - - - - - - - - - - - - - - - - - - - - - - -");
-            Log("");
-            Log("> Simple HttpClient requests");
+            DetailedLog.Info("");
+            DetailedLog.Info("- - - - - - - - - - - - - - - - - - - - - - - -");
+            DetailedLog.Info("");
+            DetailedLog.Info("> Simple HttpClient requests");
             SimpleHttpClientTest();
 
-            Log("");
-            Log("- - - - - - - - - - - - - - - - - - - - - - - -");
-            Log("");
-            Log("> Done. See results in \"result.txt\" file in the current working directory.");
-            Log("Press ENTER to exit.");
+            DetailedLog.Info("");
+            DetailedLog.Info("- - - - - - - - - - - - - - - - - - - - - - - -");
+            DetailedLog.Info("");
+            DetailedLog.Info("> Done. See results in \"logs\" directory under the current working directory.");
+            
+            Console.WriteLine("Press ENTER to exit.");
             Console.ReadLine();
         }
 
@@ -55,7 +68,7 @@ namespace TestTwitterAPI
 
                 try
                 {
-                    Log($"- ({i}/{Constants.BlockAttempts}) Block started...");
+                    DetailedLog.Info($"- ({i}/{Constants.BlockAttempts}) Block started...");
                     timer.Start();
 
                     var blockSuccess = User.BlockUser(Constants.AccountIdToBlock);
@@ -65,16 +78,16 @@ namespace TestTwitterAPI
                         FailedBlock++;
 
                         var lastException = ExceptionHandler.GetLastException();
-                        Log($"    - Failed to block. {(lastException == null ? "Couldn't get the last Tweetinvi exception." : $"Twitter description: {lastException.TwitterDescription}.")}");
+                        DetailedLog.Error($"    - Failed to block. {(lastException == null ? "Couldn't get the last Tweetinvi exception." : $"Twitter description: {lastException.TwitterDescription}.")}");
                     }
                     else
                     {
-                        Log("    - Success.");
+                        DetailedLog.Info("    - Success.");
                     }
                 }
                 catch (Exception e)
                 {
-                    Log($"    - Failed. Exception: {e.Message}");
+                    DetailedLog.Error($"    - Failed. Exception: {e.Message}");
                     FailedBlock++;
                 }
                 finally
@@ -83,7 +96,7 @@ namespace TestTwitterAPI
                 }
 
                 var timeElapsed = (ulong) timer.ElapsedMilliseconds;
-                Log($"    - Time elapsed: {timeElapsed}ms");
+                DetailedLog.Info($"    - Time elapsed: {timeElapsed}ms");
 
                 // Update stats
                 MinTime = timeElapsed < MinTime || MinTime == 0 ? timeElapsed : MinTime;
@@ -93,7 +106,7 @@ namespace TestTwitterAPI
             }
 
             // Print stats
-            Log("");
+            DetailedLog.Info("");
             PrintStats();
         }
 
@@ -109,7 +122,7 @@ namespace TestTwitterAPI
 
                 try
                 {
-                    Log($"- ({i}/{Constants.BlockAttempts}) Block started...");
+                    DetailedLog.Info($"- ({i}/{Constants.BlockAttempts}) Block started...");
                     timer.Start();
 
                     var response = client.BlockTest(
@@ -118,11 +131,11 @@ namespace TestTwitterAPI
                         Constants.UserAccessToken,
                         Constants.UserAccessSecret).Result;
 
-                    Log("    - Done.");
+                    DetailedLog.Info("    - Done.");
                 }
                 catch (Exception e)
                 {
-                    Log($"    - Failed. Exception: {e.Message}");
+                    DetailedLog.Error($"    - Failed. Exception: {e.Message}");
                     FailedBlock++;
                 }
                 finally
@@ -131,7 +144,7 @@ namespace TestTwitterAPI
                 }
 
                 var timeElapsed = (ulong) timer.ElapsedMilliseconds;
-                Log($"    - Time elapsed: {timeElapsed}ms");
+                DetailedLog.Info($"    - Time elapsed: {timeElapsed}ms");
 
                 // Update stats
                 MinTime = timeElapsed < MinTime || MinTime == 0 ? timeElapsed : MinTime;
@@ -140,7 +153,7 @@ namespace TestTwitterAPI
                 Average = i == 0 ? timeElapsed : (Average + timeElapsed) / 2;
             }
 
-            Log("");
+            DetailedLog.Info("");
             PrintStats();
         }
 
@@ -164,22 +177,12 @@ namespace TestTwitterAPI
 
             decimal average = sum / (ulong) Times.Count;
 
-            Log($"======= STATISTICS ======");
-            Log($"    - Tries: {Times.Count} attempts");
-            Log($"    - minTime: {MinTime}ms");
-            Log($"    - maxTime: {MaxTime}ms");
-            Log($"    - average: {average}ms");
-            Log($"    - failed: {FailedBlock}");
-        }
-
-        static void Log(string message)
-        {
-            using (var logFile = File.AppendText("result.txt"))
-            {
-                logFile.WriteLine(message);
-            }
-
-            Console.WriteLine(message);
+            SummaryLog.Info($"======= STATISTICS ======");
+            SummaryLog.Info($"    - Tries: {Times.Count} attempts");
+            SummaryLog.Info($"    - minTime: {MinTime}ms");
+            SummaryLog.Info($"    - maxTime: {MaxTime}ms");
+            SummaryLog.Info($"    - average: {average}ms");
+            SummaryLog.Info($"    - failed: {FailedBlock}");
         }
     }
 }
