@@ -46,8 +46,8 @@ namespace TestTwitterAPI
             // Configure Tweetinvi
             Auth.SetUserCredentials(Constants.ConsumerKey, Constants.ConsumerSecret,
                 Constants.UserAccessToken, Constants.UserAccessSecret);
-
-            TweetinviConfig.ApplicationSettings.HttpRequestTimeout = 120000; // 2 minutes max
+            
+            TweetinviConfig.CurrentThreadSettings.HttpRequestTimeout = 120000; // 2 minutes max
 
             for (var i = 0; i < Constants.BlockAttempts; i++)
             {
